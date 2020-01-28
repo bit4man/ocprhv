@@ -1,0 +1,71 @@
+---
+domainname: ocp4.peterlarsen.org
+revdomain: "11.168.192.in-addr.arpa"
+clustername: b1
+network:
+  dns:
+    - 192.168.11.22
+    - 192.168.11.23
+  gateway: 192.168.11.1
+
+bootstrap:
+  - hostname: bootstrap
+    mac: "<unknown>"
+    ip: 192.168.11.81
+    mask: 255.255.255.0
+    rootsize: 50GiB
+    memory: 4GiB
+
+master:
+  - hostname: master1
+    mac: "<unknown>"
+    ip: 192.168.11.82
+    mask: 255.255.255.0
+    rootsize: 120GiB
+    memory: 16GiB
+  - hostname: master2
+    mac: "<unknown>"
+    ip: 192.168.11.83
+    mask: 255.255.255.0
+    rootsize: 120GiB
+    memory: 16GiB
+  - hostname: master3
+    mac: "<unknown>"
+    ip: 192.168.11.84
+    mask: 255.255.255.0
+    rootsize: 120GiB
+    memory: 16GiB
+
+lb:
+  - hostname: lb
+    mac: "<unknown>"
+    ip: 192.168.11.85
+    mask: 255.255.255.0
+    rootsize: 20GiB
+    memory: 2GiB
+
+compute:
+  - hostname: node1
+    mac: "<unknown>"
+    ip: 192.168.11.86
+    mask: 255.255.255.0
+    rootsize: 120GiB
+    memory: 8GiB
+  - hostname: node2
+    mac: "<unknown>"
+    ip: 192.168.11.87
+    mask: 255.255.255.0
+    rootsize: 120GiB
+    memory: 8GiB
+  - hostname: node3
+    mac: "<unknown>"
+    ip: 192.168.11.88
+    mask: 255.255.255.0
+    rootsize: 120GiB
+    memory: 8GiB
+
+ocp_cidr: 10.128.0.0/23
+ocp_svcnet: 172.30.0.0/16
+
+sshkey: id_ocp
+

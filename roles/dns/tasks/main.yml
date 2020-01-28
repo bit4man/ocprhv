@@ -1,0 +1,77 @@
+---
+- name: Setup DNS
+  block:
+  # tasks file for dns
+  - name: Add nodes to DNS
+    ipa_dnsrecord:
+      state: present
+      zone_name: "{{ domainname }}"
+      record_type: 'A'
+      record_name: "{{ item.hostname }}.{{ clustername }}"
+      record_value: "{{ item.ip }}"
+    with_items:
+      - "{{ bootstrap }}"
+      - "{{ master }}"
+      - "{{ lb }}"
+      - "{{ compute }}"
+
+  - name: Add PTR to DNS
+    ipa_dnsrecord:
+      state: present
+      zone_name: "{{ revdomain }}"
+      record_type: 'PTR'
+      record_name: "{{ item.ip | regex_replace('^.*\\.([0-9]+)$', '\\1') }}"
+      record_value: "{{ item.hostname }}.{{ clustername }}.{{ domainname }}."
+    with_items:
+      - "{{ bootstrap }}"
+      - "{{ master }}"
+      - "{{ lb }}"
+      - "{{ compute }}"
+
+  - name: Add API end point
+    ipa_dnsrecord:
+      state: present
+      zone_name: "{{ domainname }}"
+      record_type: 'CNAME'
+      record_name: "{{item}}.{{clustername}}"
+      record_value: "{{lb[0].hostname}}.{{clustername}}" 
+    with_items:
+      - "api"
+      - "api-int"
+
+  - name: Add Wildcard DNS
+    ipa_dnsrecord:
+      state: present
+      zone_name: "{{ domainname }}"
+      record_type: 'CNAME'
+      record_name: "*.apps.{{clustername}}"
+      record_value: "{{ compute[0].hostname }}.{{ clustername }}"
+
+  - name: Add ETCD records  # added to masters
+    ipa_dnsrecord:
+      state: present
+      zone_name: "{{ domainname }}"
+      record_type: 'CNAME'
+      record_name: "etcd-{{ item }}.{{ clustername }}"
+      record_value: "{{master[item].hostname}}"
+    with_items:
+      - 0
+      - 1
+      - 2
+
+  - name: Add ETCD records  # added to masters
+    ipa_dnsrecord:
+      state: present
+      zone_name: "{{ domainname }}"
+      record_type: 'SRV'
+      record_name: "_etcd-server-ssl._tcp.{{clustername}}"
+      record_ttl: 86400
+      record_value: "0 10 2380 etcd-0.{{clustername}}.{{domainname}}."
+  - name: Fix for ipa_dns_record adding multiple records
+    shell: "ipa dnsrecord-mod {{ domainaname }} _etcd-server-ssl._tcp.{{clustername}} --addattr=srvrecord=\"{{ item }}\""
+    with_items:
+    - "0 10 2380 etcd-1.{{clustername}}.{{domainname}}."
+    - "0 10 2380 etcd-2.{{clustername}}.{{domainname}}."
+
+  environment:
+    KRB5CCNAME: "{{ cname }}"  

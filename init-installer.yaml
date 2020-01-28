@@ -1,0 +1,7 @@
+---
+- name: Initialize Installer
+  hosts: localhost
+  connection: local
+  roles:
+    - getenv 
+    - dns

@@ -1,0 +1,7 @@
+---
+- name: Initialize SSH
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  roles:
+    - ocp4install

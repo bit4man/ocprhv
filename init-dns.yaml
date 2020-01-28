@@ -1,0 +1,19 @@
+---
+- name: Initialize DNS
+  hosts: localhost
+  connection: local
+  gather_facts: no
+#  roles:
+#    - role: dns
+#      tasks_from: getcred.yml
+#    - role: dns
+#      tasks_from: main.yml
+  tasks:
+  - name: Get Creds
+    include_role:
+      name: dns
+      tasks_from: getcred
+  - name: Setup DNS
+    include_role:
+      name: dns
+      tasks_from: main

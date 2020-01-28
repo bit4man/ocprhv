@@ -1,0 +1,19 @@
+Prereqs:
+
+To use ovirt:
+  dnf install ovirt-engine-cli
+  dnf install libovirt{,-devel}
+  dnf install python3-devel 
+  dnf install gcc libcurl-devel libxml2-devel ruby-devel
+  dnf install python3-pycurl
+
+  pip3 install ovirt-engine-sdk-python
+  pip3 install curl-config
+  pip3 --upgrade ansible --user ????
+
+  Remove any local version of pycurl
+
+To use Kerberos
+  pip3 install urllib_gssapi --system
+
+

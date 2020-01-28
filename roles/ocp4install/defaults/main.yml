@@ -1,0 +1,4 @@
+---
+# defaults file for ocp4install
+
+base: "$HOME/ocpinstall"

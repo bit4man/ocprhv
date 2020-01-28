@@ -1,0 +1,27 @@
+---
+# tasks file for roles/getenv
+- name: Download latest RHCOS
+  get_url:
+    url: "{{ coreosurl }}/{{ item }}"
+    dest: "{{ destdir }}/{{ item }}"
+  with_items: "{{ coreos }}"
+
+- name: Download latest installer and client
+  get_url:
+    url: "{{ ocp4url }}/{{ item }}"
+    dest: "{{ destdir }}/{{ item }}"
+  with_items: "{{ ocp4 }}"
+
+- name: Extract client tools
+  unarchive:
+    src: "{{ destdir }}/{{ ocpclienttar }}"
+    dest:  "{{ bin }}/"
+    keep_newer: yes
+    exclude: README.md
+
+- name: Extract install tools
+  unarchive:
+    src: "{{ destdir }}/{{ ocpinstalltar }}"
+    dest:  "{{ bin }}/"
+    keep_newer: yes
+    exclude: README.md

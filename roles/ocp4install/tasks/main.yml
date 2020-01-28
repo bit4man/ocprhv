@@ -1,0 +1,52 @@
+---
+# Create SSH Key for installation
+- file:
+    path: "$HOME/.ssh"
+    state: directory
+    mode: 0700
+
+- name: Generate SSH key for installation
+  openssh_keypair:
+    path: "$HOME/.ssh/id_{{clustername}}"
+    size: 2048
+    type: rsa
+    state: present
+  register: ocp4_sshkey
+
+- debug:
+    var: ocp4_sshkey
+
+- name: Create Installation Base Directory
+  file:
+    state: directory
+    path: "{{ base }}"
+
+- name: Create installation directory {{ clustername }}
+  file:
+    state: directory
+    path: "{{ base }}/{{ clustername }}"
+  register: instbase
+
+- name: Create install-config
+  template:
+    src: install-config.j2
+    dest: "{{ instbase.path }}/install-config.yaml"
+
+- name: Backup install-config
+  copy:
+    src: "{{ instbase.path }}/install-config.yaml"
+    dest: "{{ instbase.path }}/backup-install-config.yaml"
+
+- name: Create manifests
+  shell: "~/bin/openshift-install create manifests --dir={{ instbase.path }}"
+  register: inst_manifest 
+
+- name: Add cluster-network-03-config file
+  template:
+    src: cluster-network-03-config.j2
+    dest: "{{ instbase.path }}/manifests/cluster-network-03-config.yml"
+
+- name: Create ignition files
+  shell: "openshift-install create ignition-configs --dir={{ instbase.path }}"
+  register: inst_ignition
+

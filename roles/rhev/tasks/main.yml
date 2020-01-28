@@ -1,0 +1,83 @@
+---
+# tasks file for rhev
+- name: Get CA Cert
+  shell: "echo quit | openssl s_client -showcerts -servername {{ovirt_host}} -connect {{ovirt_host}}:443"
+  register: rhv_cacert
+- name: Save CA Cert
+  copy:
+    content: "{{rhv_cacert.stdout}}"
+    dest: "$HOME/ansible/data/ca.pem"
+
+- name: Setup VMs
+  block:
+    # Create a vault with `ovirt_password` variable which store your
+    # oVirt/RHV user's password, and include that yaml file with variable:
+    - include_vars: ovirt_password.yml
+
+    - name: Obtain SSO token with using username/password credentials
+      ovirt_auth:
+        url: "{{ovirt_url}}/ovirt-engine/api"
+        username: "{{ovirt_user}}@{{ovirt_domain}}"
+        ca_file: "$HOME/ansible/data/ca.pem"
+        password: "{{ ovirt_password }}"
+
+    # Create disks for each VM
+    - name: Create seed disks for VMs
+      ovirt_disk:
+        auth: "{{ ovirt_auth }}"
+        state: present
+        name: "ocp4_{{clustername}}-{{item.hostname}}"
+        storage_domain: "{{ovirt_storagedomain}}"
+        size: "{{ item.rootsize }}"
+        description: "System disk for {{item.hostname}}"
+        state: detached
+        sparsify: true
+        format: cow
+      with_items:
+        - "{{ bootstrap }}"
+        - "{{ master }}"
+        - "{{ compute }}"
+        - "{{ lb }}"
+      register: vmdisks
+
+    - debug:
+        var: vmdisks
+
+    - ovirt_vm:
+        auth: "{{ ovirt_auth }}"
+        state: present
+        name: "ocp4_{{clustername}}-{{item.hostname}}"
+        cluster: "{{ovirt_cluster}}"
+        memory: "{{ item.memory }}"
+        cpu_cores: 4
+        cpu_sockets: 2
+        type: server
+        operating_system: rhel_8x64
+        disks:
+        - name: "ocp4_{{clustername}}-{{item.hostname}}"
+          bootable: True
+        nics:
+        - name: nic1
+        cloud_init:
+          nic_name: eth0
+          nic_boot_protocol: static
+          nic_ip_address: "{{ item.ip }}"
+          nic_netmask: "{{ item.mask }}"
+          nic_gateway: "{{ network.gateway }}"
+          dns_servers: "{{ network.dns|join(',') }}"
+          host_name: "{{item.hostname}}.{{clustername}}.{{domainname}}"
+      with_items:
+        - "{{ bootstrap }}"
+        - "{{ master }}"
+        - "{{ compute }}"
+        - "{{ lb }}"
+      register: vmdef
+
+    - debug:
+        var: vmdef
+     
+  always:
+    - name: Always revoke the SSO token
+      ovirt_auth:
+        state: absent
+        ovirt_auth: "{{ ovirt_auth }}"

@@ -1,0 +1,11 @@
+---
+- name: Get KRB5Cache
+  shell: "klist -l"
+  register: credsResult
+- set_fact:
+    cname: "{{ credsResult.stdout | regex_search(regexp,'\\1') | first }}"
+  vars:
+    regexp: '(KCM:[0-9]+)'
+- debug:
+    var: cname
+
