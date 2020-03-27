@@ -1,71 +1,101 @@
 ---
+ocpversion: "4.3.8"
 domainname: ocp4.peterlarsen.org
 revdomain: "11.168.192.in-addr.arpa"
 clustername: b1
+
+# Subnet size is hardcoded
+ocp_cidr: 10.128.0.0/23
+ocp_svcnet: 172.30.0.0/16
+
 network:
   dns:
     - 192.168.11.22
     - 192.168.11.23
+  netmask: 255.255.255.0
   gateway: 192.168.11.1
 
 bootstrap:
+  group: bootstrap
+  hosts:
   - hostname: bootstrap
     mac: "<unknown>"
     ip: 192.168.11.81
     mask: 255.255.255.0
     rootsize: 50GiB
     memory: 4GiB
+    cores: 2
+    sockets: 1
+ 
+master-config:
+  - cores: 4
+    sockets: 1
+  - memory: 16GiB
 
 master:
+  group: masters
+  hosts:
   - hostname: master1
     mac: "<unknown>"
     ip: 192.168.11.82
-    mask: 255.255.255.0
     rootsize: 120GiB
+    cores: 4
+    sockets: 1
     memory: 16GiB
   - hostname: master2
     mac: "<unknown>"
     ip: 192.168.11.83
-    mask: 255.255.255.0
     rootsize: 120GiB
+    cores: 4
+    sockets: 1
     memory: 16GiB
   - hostname: master3
     mac: "<unknown>"
     ip: 192.168.11.84
-    mask: 255.255.255.0
     rootsize: 120GiB
+    cores: 4
+    sockets: 1
     memory: 16GiB
-
+  
 lb:
+  group: lb
+  hosts:
   - hostname: lb
     mac: "<unknown>"
     ip: 192.168.11.85
-    mask: 255.255.255.0
     rootsize: 20GiB
     memory: 2GiB
+    template: rhel8.1
+
+compute-config:
+  - cores: 2
+    sockets: 1
+  - memory: 8GiB
 
 compute:
+  group: workers
+  hosts:
   - hostname: node1
     mac: "<unknown>"
     ip: 192.168.11.86
-    mask: 255.255.255.0
     rootsize: 120GiB
+    cores: 2
+    sockets: 1
     memory: 8GiB
   - hostname: node2
     mac: "<unknown>"
     ip: 192.168.11.87
-    mask: 255.255.255.0
     rootsize: 120GiB
+    cores: 2
+    sockets: 1
     memory: 8GiB
   - hostname: node3
     mac: "<unknown>"
     ip: 192.168.11.88
-    mask: 255.255.255.0
     rootsize: 120GiB
+    cores: 2
+    sockets: 1
     memory: 8GiB
-
-ocp_cidr: 10.128.0.0/23
-ocp_svcnet: 172.30.0.0/16
-
-sshkey: id_ocp
+ 
+sshkey: "id_{{ clustername }}"
 

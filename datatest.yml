@@ -1,0 +1,39 @@
+---
+- name: Setup VMS
+  hosts: localhost
+  vars:
+    ovirt_password: "Dilbert!45"
+  tasks:
+  - name: Test VMs
+    block:
+    - name: Obtain SSO token with using username/password credentials
+      ovirt_auth:
+        url: "https://rhev4m.peterlarsen.org/ovirt-engine/api"
+        username: "rhevadmin@peterlarsen.org"
+        ca_file: "{{ lookup('env','HOME') }}/ansible/data/ca.pem"
+        password: "{{ ovirt_password }}"
+
+    - name: Get NIC details
+      ovirt_nic_info:
+        auth: "{{ ovirt_auth }}"
+        vm: "ocp4_{{clustername}}-{{ item.hostname }}"
+        name: "nic*"
+      register: nics
+      with_items:
+        - "{{ bootstrap }}"
+        - "{{ master }}"
+        - "{{ compute }}"
+      loop_control:
+        label: "ocp4_{{clustername}}-{{ item.hostname }}"
+    - debug:
+        var: nics
+    - debug:
+        msg: "{{item.item.hostname}}:{{ item.ovirt_nics[0].mac.address }}"
+      with_items:
+        - "{{ nics.results }}"
+
+    always:
+    - name: Always revoke the SSO token
+      ovirt_auth:
+        state: absent
+        ovirt_auth: "{{ ovirt_auth }}"

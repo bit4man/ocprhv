@@ -6,7 +6,20 @@
 - name: Save CA Cert
   copy:
     content: "{{rhv_cacert.stdout}}"
-    dest: "$HOME/ansible/data/ca.pem"
+    dest: "{{ lookup('env','HOME') }}/ansible/data/ca.pem"
+
+- file:
+    path: "{{ lookup('env','HOME') }}/.ssh"
+    state: directory
+    mode: 0700
+
+- name: Generate SSH key for installation
+  openssh_keypair:
+    path: "{{ lookup('env','HOME') }}/.ssh/id_{{clustername}}"
+    size: 2048
+    type: rsa
+    state: present
+  register: ocp4_sshkey
 
 - name: Setup VMs
   block:
@@ -18,14 +31,25 @@
       ovirt_auth:
         url: "{{ovirt_url}}/ovirt-engine/api"
         username: "{{ovirt_user}}@{{ovirt_domain}}"
-        ca_file: "$HOME/ansible/data/ca.pem"
+        ca_file: "{{ lookup('env','HOME') }}/ansible/data/ca.pem"
         password: "{{ ovirt_password }}"
 
+    - name: Remove potential existing VMs
+      ovirt_vm:
+        auth: "{{ ovirt_auth }}"
+        state: stopped
+        name: "ocp4_{{clustername}}-{{item.hostname}}"
+      with_items:
+        - "{{ bootstrap.hosts }}"
+        - "{{ master.hosts }}"
+        - "{{ compute.hosts }}"
+      loop_control:
+        label: "{{ item.hostname }}"
+         
     # Create disks for each VM
     - name: Create seed disks for VMs
       ovirt_disk:
         auth: "{{ ovirt_auth }}"
-        state: present
         name: "ocp4_{{clustername}}-{{item.hostname}}"
         storage_domain: "{{ovirt_storagedomain}}"
         size: "{{ item.rootsize }}"
@@ -34,48 +58,80 @@
         sparsify: true
         format: cow
       with_items:
-        - "{{ bootstrap }}"
-        - "{{ master }}"
-        - "{{ compute }}"
-        - "{{ lb }}"
+        - "{{ bootstrap.hosts }}"
+        - "{{ master.hosts }}"
+        - "{{ compute.hosts }}"
+      loop_control:
+        label: "{{ item.hostname }}"
       register: vmdisks
 
-    - debug:
-        var: vmdisks
-
-    - ovirt_vm:
+    - name: "Create VMs"
+      ovirt_vm:
         auth: "{{ ovirt_auth }}"
         state: present
         name: "ocp4_{{clustername}}-{{item.hostname}}"
         cluster: "{{ovirt_cluster}}"
         memory: "{{ item.memory }}"
-        cpu_cores: 4
-        cpu_sockets: 2
+        memory_guaranteed: 4GiB
+        memory_max: 16GiB
+        cpu_cores: "{{ item.cores|default(1) }}"
+        cpu_sockets: "{{ item.sockets|default(1) }}" 
         type: server
         operating_system: rhel_8x64
+        boot_devices: 
+        - hd
+        - network
+        boot_menu: false
+        ballooning_enabled: true
         disks:
         - name: "ocp4_{{clustername}}-{{item.hostname}}"
           bootable: True
         nics:
         - name: nic1
-        cloud_init:
-          nic_name: eth0
-          nic_boot_protocol: static
-          nic_ip_address: "{{ item.ip }}"
-          nic_netmask: "{{ item.mask }}"
-          nic_gateway: "{{ network.gateway }}"
-          dns_servers: "{{ network.dns|join(',') }}"
-          host_name: "{{item.hostname}}.{{clustername}}.{{domainname}}"
+          interface: virtio
+          profile_name: "{{ ovirt_netprofile }}"
       with_items:
-        - "{{ bootstrap }}"
-        - "{{ master }}"
-        - "{{ compute }}"
-        - "{{ lb }}"
+        - "{{ bootstrap.hosts[hostname] }}"
+        - "{{ master.hosts[hostname] }}"
+        - "{{ compute.hosts[hostname] }}"
       register: vmdef
+      loop_control:
+        label: "{{ item.hostname }}"
 
+    - name: Get NIC details
+      ovirt_nic_info:
+        auth: "{{ ovirt_auth }}"
+        vm: "ocp4_{{clustername}}-{{ item.hostname }}"
+        name: "nic*"
+      register: nics
+      with_items:
+        - "{{ bootstrap.hosts }}"
+        - "{{ master.hosts }}"
+        - "{{ compute.hosts }}"
+      loop_control:
+        label: "ocp4_{{clustername}}-{{ item.hostname }}"
     - debug:
-        var: vmdef
-     
+        msg: "{{item.item.hostname}}:{{ item.ovirt_nics[0].mac.address }}"
+      with_items:
+        - "{{ nics.results }}"
+
+    - name: Add VMs to inventory file
+      add_host:
+        groups: "{{ item.item.group }}"
+        hostname: "{{ item.item.hostname }}"  
+        ansible_host: "{{ item.item.hostname }}.{{ clustername }}.{{ domainname }}"
+        ansible_ssh_private_key_file: "{{ lookup('env','HOME')}}/.ssh/id_{{clustername}}.pub"
+        mac: "{{ item.ovirt_nics[0].mac.address }}"
+      loop: "{{ nics }}"
+      loop_control:
+        label: "{{ item.item.hostname }}"
+
+    - include: "lb.yaml"
+      name: Include Load Balancer
+
+    - include: "tagvm.yaml"
+      name: Include tagging
+
   always:
     - name: Always revoke the SSO token
       ovirt_auth:

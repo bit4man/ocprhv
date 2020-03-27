@@ -1,0 +1,16 @@
+---
+- name: Create parent tag
+  ovirt_tag:
+    auth: "{{ ovirt_auth }}"
+    state: present
+    name: ocp4
+
+- name: Create cluster tag
+  ovirt_tag:
+    auth: "{{ ovirt_auth }}"
+    parent: ocp4
+    name: "cluster-{{ clustername }}"
+    vms: "{{ item }}"
+  loop: 
+    - "{{ vmdef | json_query('results[*].vm.name') | union ( lbdef | json_query('results[*].vm.name')) }}"
+  register: createtag

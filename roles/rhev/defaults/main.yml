@@ -4,6 +4,7 @@ ovirt_host: rhev4m.peterlarsen.org
 ovirt_url: "https://{{ovirt_host}}"
 ovirt_user: rhevadmin
 ovirt_domain: peterlarsen.org
+ovirt_netprofile: ovirtmgmt
 ovirt_cluster: Ovirt_Cluster
 ovirt_datacenter: Home
 ovirt_storagedomain: ssdquick

@@ -1,7 +1,18 @@
 ---
-- name: Initialize SSH
+- name: Initialize SSH and WWW
   hosts: localhost
   connection: local
-  gather_facts: no
+  gather_facts: yes
   roles:
     - ocp4install
+
+- name: Setup WWW
+  hosts: www
+  gather_facts: yes
+  become: yes
+  tasks:
+  - name: Setup HTTP
+    include_role:
+      name: ocp4install
+      tasks_from: setuphttp
+

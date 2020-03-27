@@ -1,0 +1,19 @@
+    - name: Add VMs to inventory file
+      vars:
+        inventory:
+        - group: bootstrap
+          entries: "{{ bootstrap }}"
+        - group: masters
+          entries: "{{ master }}"
+        - group: workers
+          entries: "{{ compute }}"
+      add_host:
+        groups: "{{ item.0.group }}"
+        hostname: "{{ item.1.hostname }}"  
+        ansible_host: "{{ item.1.hostname }}.{{ clustername }}.{{ domainname }}"
+        ansible_ssh_private_key_file: "{{ lookup('env','HOME')}}/.ssh/id_{{clustername}}.pub"
+      loop: "{{ inventory | subelements('entries')}}"
+      loop_control:
+        label: "{{ item.1.hostname }}"
+
+

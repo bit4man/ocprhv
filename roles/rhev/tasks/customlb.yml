@@ -1,0 +1,84 @@
+---
+# Customize Load Balancer
+
+- name: Wait for LB to be ready
+  wait_for:
+    host: "{{ hostvars[item].ansible_host }}"
+    port: 22
+    search_regex: OpenSSH
+  delegate_to: localhost
+  loop: "{{ groups.lb }}"
+
+- name: Setup LB
+  setup: ""
+
+- name: Subscribe to RHEL8 upstream
+  redhat_subscription:
+    state: present
+    activationkey: rhel8
+    org_id: Default_Organization
+    auto_attach: true
+
+#- name: Subscribe to Satellite
+#  shell: "subscription-manager register --activationkey=rhel8 --org=Default_Organization"
+
+- name: Ensure up-to-date
+  package:
+    name: '*'
+    state: latest
+
+- name: Install packages
+  package:
+    name: "{{ item }}"
+    state: present
+  loop:
+  - haproxy
+  - firewalld
+
+- name: Configure HAProxy
+  template:
+    src: haproxy.j2
+    dest: /etc/haproxy/haproxy.cfg
+    validate: "/usr/sbin/haproxy -c -V -f %s"
+
+- name: Enable haproxy_connect_any allowing listening on a wildcard
+  seboolean:
+    name: haproxy_connect_any
+    state: true
+    persistent: true
+
+- name: Enable/Start haproxy
+  service:
+    name: haproxy
+    state: started
+    enabled: yes
+
+- name: Enable firewall
+  service: 
+    name: firewalld
+    state: started
+    enabled: yes
+
+- name: Setup Firewall 
+  firewalld:
+    zone: public
+    service: "{{ item }}"
+    state: enabled
+    permanent: yes
+    immediate: yes
+  loop:
+    - http
+    - https
+   
+- name: Setup Firewall ports
+  firewalld:
+    zone: public
+    port: "{{ item }}"
+    state: enabled
+    permanent: yes
+    immediate: yes
+  loop:
+    - 6443/tcp
+    - 9000/tcp 
+    - 22623/tcp 
+    - 9000/tcp

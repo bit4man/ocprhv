@@ -1,17 +1,7 @@
 ---
 # Create SSH Key for installation
-- file:
-    path: "$HOME/.ssh"
-    state: directory
-    mode: 0700
-
-- name: Generate SSH key for installation
-  openssh_keypair:
-    path: "$HOME/.ssh/id_{{clustername}}"
-    size: 2048
-    type: rsa
-    state: present
-  register: ocp4_sshkey
+- include_vars:
+    file: redhat-secrets.yml
 
 - debug:
     var: ocp4_sshkey
@@ -21,7 +11,7 @@
     state: directory
     path: "{{ base }}"
 
-- name: Create installation directory {{ clustername }}
+- name: "Create installation directory {{ clustername }}"
   file:
     state: directory
     path: "{{ base }}/{{ clustername }}"

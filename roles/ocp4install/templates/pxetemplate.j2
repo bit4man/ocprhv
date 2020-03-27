@@ -1,0 +1,6 @@
+DEFAULT pxeboot
+TIMEOUT 20
+PROMPT 0
+LABEL pxeboot
+    KERNEL http://{{ httpserver }}/rhcos/rhcos-{{ ocpversion }}-x86_64-installer-kernel 
+    APPEND  ip=dhcp rd.neednet=1 initrd=http://{{ httpserver }}/rhcos/rhcos-{{ ocpversion }}-x86_64-installer-initramfs.img console=tty0 console=ttyS0 coreos.inst=yes coreos.inst.install_dev=vda coreos.inst.image_url=http://{{ httpserver }}/rhcos/rhcos-{{ ocpversion }}-x86_64-metal.raw.gz coreos.inst.ignition_url=http://{{ httpserver }}/ignition/{{ ignition }}.ign  

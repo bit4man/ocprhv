@@ -1,0 +1,11 @@
+group {
+  use-host-decl-names on;
+  {% for host in ocphosts %}
+    host {{ host.hostname }} {
+      hardware ethernet {{ host.mac }};
+      option host-name "{{ host.hostname }}.b1.ocp4.peterlarsen.org";
+      fixed-address {{ host.ip }};
+    }
+  {% endfor %}
+}
+

@@ -5,3 +5,15 @@
   gather_facts: no
   roles:
     - rhev
+
+# Lb is defined by main task in rhev
+- name: Configure Load Balancer
+  hosts: lb
+  become: yes
+  become_user: root
+  gather_facts: yes
+  tasks:
+  - name: Customize LB
+    include_role:
+      name: rhev
+      tasks_from: customlb

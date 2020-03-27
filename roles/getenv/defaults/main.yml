@@ -1,7 +1,6 @@
 ---
 # defaults file for roles/getenv
 bin: "{{ ansible_env.HOME }}/bin"
-ocpversion: "4.3.0"
 ocp4url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest
 ocpclienttar: "openshift-client-linux-{{ ocpversion }}.tar.gz"
 ocpinstalltar: "openshift-install-linux-{{ ocpversion }}.tar.gz"
@@ -13,9 +12,10 @@ ocp4:
   - sha256sum.txt.sig
 coreosurl: https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/latest/latest
 coreos:
-  - "rhcos-{{ ocpversion }}-x86_64-installer-initramfs.img"
-  - "rhcos-{{ ocpversion }}-x86_64-installer-kernel"
-  - "rhcos-{{ ocpversion }}-x86_64-openstack.qcow2.gz"
-  - "rhcos-{{ ocpversion }}-x86_64-qemu.qcow2.gz"
-  - "rhcos-{{ ocpversion }}-x86_64-installer.iso"
+  - "rhcos-{{ ocpversion }}-x86_64-installer-initramfs.x86_64.img"
+  - "rhcos-{{ ocpversion }}-x86_64-installer-kernel-x86_64"
+  - "rhcos-{{ ocpversion }}-x86_64-metal.x86_64.raw.gz"
+  - "rhcos-{{ ocpversion }}-x86_64-openstack.x86_64.qcow2.gz"
+  - "rhcos-{{ ocpversion }}-x86_64-qemu.x86_64.qcow2.gz"
+  - "rhcos-{{ ocpversion }}-x86_64-installer.x86_64.iso"
 destdir: "{{ ansible_env.HOME }}/setup"

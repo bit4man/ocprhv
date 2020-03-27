@@ -1,0 +1,32 @@
+---
+# Setup HTTP services for required files
+- name: Create rhcos directory
+  file:
+    state: directory
+    path: /var/www/html/rhcos
+    mode: '0775'
+    owner: root
+    group: root
+
+- name: Create ignition directory
+  file:
+    state: directory
+    path: /var/www/html/ignition
+    mode: '0775'
+    owner: root
+    group: root
+
+- name: Copy PXE required images
+  copy:
+    src: "/home/ocp/setup/{{ item }}"
+    dest: "/var/www/html/rhcos/{{ item }}"
+  loop: "{{ pxefiles }}"
+
+- name: Copy generated ignition configuration files
+  copy:
+    src: "{{ lookup('env','HOME') }}/ocpinstall/{{ clustername }}/{{ item }}"
+    dest: "/var/www/html/ignition/{{ item }}"
+  loop:
+    - bootstrap.ign
+    - master.ign  
+    - worker.ign

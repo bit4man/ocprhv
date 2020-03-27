@@ -1,0 +1,48 @@
+- name: Create LB VM
+  ovirt_vm:
+    auth: "{{ ovirt_auth }}"
+    state: running
+    name: "ocp4_{{clustername}}-{{item.hostname}}"
+    cluster: "{{ovirt_cluster}}"
+    memory: "{{ item.memory }}"
+    cpu_cores: 1
+    cpu_sockets: 1
+    type: server
+    operating_system: rhel_8x64
+    template: rhel8.1-kvm
+    cloud_init:
+      nic_name: eth0
+      nic_boot_protocol: static
+      nic_ip_address: "{{ item.ip }}"
+      nic_netmask: "{{ network.netmask }}"
+      nic_gateway: "{{ network.gateway }}"
+      nic_on_boot: true
+      user_name: "cloud-user"
+      root_password: "redhat123"
+      dns_servers: "{{ network.dns|join(' ') }}"
+      host_name: "{{item.hostname}}.{{clustername}}.{{domainname}}"
+      regenerate_ssh_keys: True
+      authorized_ssh_keys: "{{ ocp4_sshkey.public_key }}"
+    cloud_init_persist: true
+    nics:
+    - name: nic1
+      interface: virtio
+      profile_name: "{{ ovirt_netprofile }}"
+  with_items:
+    - "{{ lb }}"
+  register: lbdef
+
+- debug:
+    var: lbdef
+
+- name: Add LB to hostgroup lb
+  add_host:
+    groups: lb
+    name: "{{item.hostname}}.{{clustername}}.{{domainname}}"
+    ansible_host: "{{item.hostname}}.{{clustername}}.{{domainname}}"
+    ip: "{{ item.ip }}"
+    ansible_ssh_private_key_file: "{{ lookup('env','HOME')}}/.ssh/id_{{clustername}}"
+    ansible_user: cloud-user
+    ansible_python_interpreter: /usr/libexec/platform-python
+  with_items:
+    - "{{ lb }}"

@@ -53,7 +53,7 @@
       zone_name: "{{ domainname }}"
       record_type: 'CNAME'
       record_name: "etcd-{{ item }}.{{ clustername }}"
-      record_value: "{{master[item].hostname}}"
+      record_value: "{{master[item].hostname}}.{{ clustername }}"
     with_items:
       - 0
       - 1
